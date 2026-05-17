@@ -164,10 +164,6 @@ if __name__ == "__main__":
         rf"^soft_resp{response_num}_B[0-9.]+_beta{beta}_alpha[0-9.]+_seed{seed}_prompt_{max_prompt}$"
     )
 
-    hard_pattern = re.compile(
-        rf"^hard_resp{response_num}_B[0-9.]+_beta{beta}_seed{seed}_prompt_{max_prompt}$"
-    )
-
     # -------- FLAT FILE PATTERNS --------
     flat_raw_pattern = re.compile(
         rf"^raw_resp{response_num}\.jsonl$"
@@ -185,18 +181,14 @@ if __name__ == "__main__":
         rf"^minmax_B_[0-9.]+_stretch_[0-9.]+_resp{response_num}\.jsonl$"
     )
 
-    # **CHANGED: add missing flat patterns**
-    flat_cap_pattern = re.compile(                           # **CHANGED**
-        rf"^cap_[0-9.]+_resp{response_num}\.jsonl$"           # **CHANGED**
+    flat_cap_pattern = re.compile(                           
+        rf"^cap_[0-9.]+_resp{response_num}\.jsonl$"          
     )
 
-    flat_meansoft_pattern = re.compile(                      # **CHANGED**
+    flat_meansoft_pattern = re.compile(                     
         rf"^meansoft_B_[0-9.]+_alpha_[0-9.]+_resp{response_num}\.jsonl$"
     )
 
-    flat_hard_pattern = re.compile(                          # **CHANGED**
-        rf"^hard_B_[0-9.]+_resp{response_num}\.jsonl$"
-    )
 
     flat_raw_noisy_pattern = re.compile(
         rf"^raw_resp{response_num}_noisevar_[0-9.]+\.jsonl$"
@@ -218,9 +210,8 @@ if __name__ == "__main__":
                 or flat_soft_pattern.match(name)
                 or flat_meanstd_pattern.match(name)
                 or flat_minmax_pattern.match(name)
-                or flat_cap_pattern.match(name)        # **CHANGED**
-                or flat_meansoft_pattern.match(name)   # **CHANGED**
-                or flat_hard_pattern.match(name)       # **CHANGED**
+                or flat_cap_pattern.match(name)        
+                or flat_meansoft_pattern.match(name)  
                 or flat_raw_noisy_pattern.match(name)
                 or flat_soft_noisy_pattern.match(name)
             )
