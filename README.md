@@ -12,7 +12,7 @@
 
 Stackelberg Reward Shaping studies optimal reward shaping for LLM alignment by formulating the alignment process as a Stackelberg game, or more specifically, a principal–agent model. The reward-model provider acts as the leader, designing a reward function as an incentive mechanism, while the language model acts as the follower and best responds by selecting an aligned policy.
 
-## 📄Citing CompositeFlow
+## 📄Citing Stackelberg Reward Shaping
 Please consider citing us if you find our work useful!
 
 ```
