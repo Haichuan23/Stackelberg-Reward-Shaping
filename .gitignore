@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+.DS_Store
+
+# environment / secrets
+.env
+*.key
+
+# logs
+slurm_logs/
+*.out
+*.err
+*.log
+
+# large/generated files
+outputs/
+checkpoints/
+datasets/
+wandb/
+
+# model/checkpoint files
+*.pt
+*.pth
+*.ckpt
+*.safetensors
