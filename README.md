@@ -17,18 +17,31 @@ Our codebase supports reward shaping on two popular inference-time alignment met
 2. Controlled Decoding (CD)
 
 ## Installation (SRS)
+To download the required packages, run 
+```bash
+pip install -r requirements.txt
+```
 
+To download models or eval dataset, run 
+```bash
+huggingface-cli download Qwen/Qwen3-8B \
+  --local-dir "models/qwen3-8b" \
+  --resume-download
 
+huggingface-cli download Skywork/Skywork-Reward-V2-Qwen3-8B \
+  --local-dir "models/qwen3-skywork" \
+  --resume-download
+```
 
 ## Run Stackelberg Reward Shaping on ARGS
-To run our reward shaping method, you can run with
+Go to the args subfolder. To run our reward shaping method, you can run with
 ```bash
 python new_collect_args_out_soft.py \
     --dataset Dahoas/full-hh-rlhf \
     --dataset_local_dir datasets/HH-RLHF \
     --setting test \
-    --llm models/qwen3-8b \
-    --rm models/qwen3-8b-rm \
+    --llm ./models/qwen3-8b \
+    --rm ./models/qwen3-skywork \
     --llm_gpu cuda:0 \
     --rm_gpu cuda:1 \
     --max_new_token 128 \
@@ -39,13 +52,101 @@ python new_collect_args_out_soft.py \
     --recover
 ```
 
-
-The soft here refers to Stackelberg Reward Shaping (soft) in the paper. The baselines can be run similary. 
-
+Soft here refers to Stackelberg Reward Shaping (soft) in the paper. The baselines can be run similary. 
 
 ## Run Stackelberg Reward Shaping on CD
+Go to the cd subfolder. To run cd, one need to construct an offline dataset first using the following code:
+```bash
+python util_offline/generate_offline_data_stop.py \
+  --model_name_or_path ./models/qwen3-8b \
+  --reward_model_name_or_path ./models/qwen3-skywork \
+  --rm_type standard \
+  "${LM_DTYPE_ARG[@]}" \
+  --split "train" \
+  --num_problems "10000" \
+  --samples_per_prompt "10" \
+  --max_new_tokens "128" \
+  --temperature "0.7" \
+  --top_p "0.9" \
+  --seed "1234" \
+  --output_dir "datasets/" \
+  --dataset_name "HH-RLHF" \
+  --dataset_root "datasets/" \
+  --fp16_hidden \
+  --write_jsonl \
+  --stop_on_human \
+  --stop_sentinels "\n\nHuman:" "\nHuman:" "\n\nUser:" "\nUser:" \
+  --start_prompt "0" \
+  --end_prompt "1000" \
+  --lm_gpu_id "0" \
+  --rm_gpu_id "1"
+```
 
+To perform Stackelberg Reward Shaping offline, run the following code:
+Go to the cd subfolder. To run cd, one need to construct an offline dataset first using the following code:
+```bash
+python -u util_offline/compute_offline_shaped_reward_soft.py \
+  --root_dir datasets/models_qwen3-8b-hh \
+  --reward_model skywork \
+  --max_prompts 10000 \
+  --num_responses 10 \
+  --B 15 \
+  --beta 0.667 \
+  --cap 2.0 \
+  --alpha 1.0
+```
 
+To train the $Q_{\phi}^{\mathrm{SRS}}$, run the following code:
+```bash
+python util_offline/train_value_function.py \
+  --shards_dir datasets/models_qwen3-8b-hh/shards \
+  --reward_model skywork \
+  --response_num 10 \
+  --B 15 \
+  --beta 0.667 \
+  --alpha 1.0 \
+  --reward_type soft \
+  --max_prompt 10000 \
+  --max_len 128 \
+  --batch_size 64 \
+  --epochs 15 \
+  --lr 1e-4 \
+  --device cuda \
+  --num_workers 4 \
+  --pin_memory \
+  --seed 42 \
+  --val_split 0.05 \
+  --use_pairwise \
+  --pairwise_coef 1.0 \
+  --ckpt_dir checkpoints/qwen3-8b-hh/skywork/soft_value_fn_resp10_B15_beta0.667_alpha1.0_seed42_prompt10000_cap2.0 \
+  --model_name qwen3-8b \
+  --patience 5 \
+  --evaluation hh \
+  --cap 2.0
+```
+
+To use the trained Q function for decoding, run the following code:
+```bash
+python collect_cd_outs.py \
+  --dataset Dahoas/full-hh-rlhf \
+  --dataset_local_dir datasets/HH-RLHF \
+  --model_name qwen3-8b \
+  --reward_model skywork \
+  --setting test \
+  --out_file greedy-10000LAMBDA_1.5/soft_resp10_B15_beta0.667_alpha1.0_seed42_prompt_10000/ctrl_collect_greedy_lambda_1.5.jsonl \
+  --value_ckpt checkpoints/qwen3-8b-hh/skywork/soft_value_fn_resp10_B15_beta0.667_alpha1.0_seed42_prompt10000_cap2.0/best_value_agent.pt \
+  --model_id ./models/qwen3-8b \
+  --device cuda:0 \
+  --dtype float16 \
+  --lambda_coef 1.5 \
+  --top_k 10 \
+  --temperature 0.7 \
+  --mode greedy \
+  --num_beams 4 \
+  --sample_temperature 1.0 \
+  --max_new_tokens 128 \
+  --evaluation hh
+```
 
 ## Evaluation
 
